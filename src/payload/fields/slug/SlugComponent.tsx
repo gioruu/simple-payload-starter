@@ -1,5 +1,5 @@
 'use client'
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { TextFieldClientProps } from 'payload'
 
 import { useField, Button, TextInput, FieldLabel, useFormFields, useForm } from '@payloadcms/ui'
@@ -29,6 +29,10 @@ export const SlugComponent: React.FC<SlugComponentProps> = ({
 
   const { dispatchFields } = useForm()
 
+  // Track if we've seen a non-empty slug to determine if this is an existing document
+  const hasSeenNonEmptySlug = useRef(false)
+  const isFirstRender = useRef(true)
+
   // The value of the checkbox
   // We're using separate useFormFields to minimise re-renders
   const checkboxValue = useFormFields(([fields]) => {
@@ -40,15 +44,37 @@ export const SlugComponent: React.FC<SlugComponentProps> = ({
     return fields[fieldToUse]?.value as string
   })
 
+  // Track if we've encountered a non-empty slug (indicates existing document)
+  useEffect(() => {
+    if (value && value.trim() !== '' && !hasSeenNonEmptySlug.current) {
+      hasSeenNonEmptySlug.current = true
+    }
+  }, [value])
+
   useEffect(() => {
     if (checkboxValue) {
       if (targetFieldValue) {
         const formattedSlug = formatSlug(targetFieldValue)
+        
+        // Only update slug if:
+        // 1. We've never seen a non-empty slug (indicates new document), OR  
+        // 2. Current slug is empty (user manually cleared it)
+        const shouldUpdateSlug = !hasSeenNonEmptySlug.current || 
+                                (!value || value.trim() === '')
 
-        if (value !== formattedSlug) setValue(formattedSlug)
+        if (shouldUpdateSlug && value !== formattedSlug) {
+          setValue(formattedSlug)
+        }
       } else {
-        if (value !== '') setValue('')
+        // Only clear the slug if we haven't seen a non-empty slug yet (new document)
+        if (!hasSeenNonEmptySlug.current && value !== '') {
+          setValue('')
+        }
       }
+    }
+    
+    if (isFirstRender.current) {
+      isFirstRender.current = false
     }
   }, [targetFieldValue, checkboxValue, setValue, value])
 
