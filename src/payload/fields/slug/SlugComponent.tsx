@@ -57,11 +57,9 @@ export const SlugComponent: React.FC<SlugComponentProps> = ({
         const formattedSlug = formatSlug(targetFieldValue)
         
         // Only update slug if:
-        // 1. This is the first render and slug is empty (new document), OR
-        // 2. We've never seen a non-empty slug (new document), OR  
-        // 3. Current slug is empty (user cleared it)
-        const shouldUpdateSlug = (isFirstRender.current && (!value || value.trim() === '')) ||
-                                !hasSeenNonEmptySlug.current ||
+        // 1. We've never seen a non-empty slug (indicates new document), OR  
+        // 2. Current slug is empty (user manually cleared it)
+        const shouldUpdateSlug = !hasSeenNonEmptySlug.current || 
                                 (!value || value.trim() === '')
 
         if (shouldUpdateSlug && value !== formattedSlug) {
